@@ -7,7 +7,7 @@ Info om states
 1 APP_PRODUCE Startar allt innan normal drift
 2 RUN för att köra normalt
 3 THROW när bollen ska kastas
-
+5 DEBUG för alla enkel kod för att debuga
 */
 
 int trigPin = 11;    // Trigger
@@ -30,7 +30,7 @@ void setup() {
   
   state = 1;
 
-  servo.attach(9);  
+//  servo.attach(9);  
 
     //Serial Port begin
   Serial.begin (9600);
@@ -45,14 +45,14 @@ void setup() {
  * bool fwd is the direction of the motor where true is forward and false is backward momentum
  */
 void runLeftWheel(byte speed, bool fwd){
-  if(fwd==true){
-    digitalWrite(13, HIGH); //Establishes forward directios of Channel B
+  if(fwd==false){
+    digitalWrite(13, HIGH);  //Establishes forward directios of Channel B
   }
   else{
-    digitalWrite(13, LOW); //Establishes backward directions of Channel B
+    digitalWrite(13, LOW);   //Establishes backward directions of Channel B
   }
-    digitalWrite(8, LOW); //Disengage the Brake for Channel B
-    analogWrite(11, speed); //Spins the motor on Channel B at the speed of byte speed
+    digitalWrite(8, LOW);    //Disengage the Brake for Channel B
+    analogWrite(11, speed);  //Spins the motor on Channel B at the speed of byte speed
   
 }
 
@@ -61,6 +61,7 @@ void runLeftWheel(byte speed, bool fwd){
  */
 void brakeLeftWheel(){
   digitalWrite(8, HIGH); //Engages the Brakes for Channel B
+  analogWrite(11, 0);
   }
  
 /**
@@ -73,10 +74,10 @@ void runRightWheel(byte speed, bool fwd){
     digitalWrite(12, HIGH); //Establishes forward directions of Channel A
     }
    else{ 
-    digitalWrite(12, LOW); //Establishes backward directions of Channel A
+    digitalWrite(12, LOW);  //Establishes backward directions of Channel A
    }
   
-    digitalWrite(9, LOW); //Disengages the Brakes for Channel A
+    digitalWrite(9, LOW);  //Disengages the Brakes for Channel A
     analogWrite(3, speed); //Spins the motor on Channel A at the speed of byte speed
 }
 
@@ -85,6 +86,7 @@ void runRightWheel(byte speed, bool fwd){
  */
 void brakeRightWheel(){
   digitalWrite(9, HIGH); //Engages the Brakes for Channel A
+  analogWrite(3, 0);
   }
 
 /**
@@ -143,10 +145,11 @@ void loop() {
 
     //APP_PRODUCE
     case 1:
-    runLeftWheel(255, true); //Startar motorn för den vänstra hjulet
+    runLeftWheel(255, true);  //Startar motorn för den vänstra hjulet
     runRightWheel(255, true); //Startar motorn för den högra hjulet
     
-    state = 2;                //Går till run
+    //state = 2;                //Går till run
+    state=5;
     break;
 
     //RUN
@@ -173,20 +176,39 @@ void loop() {
     //Throw
     case 3:
   
-      brakeLeftWheel();   //Stannar den vänstra motorn
-      brakeRightWheel();  //Stannar den högra motorn
+      brakeLeftWheel();          //Stannar den vänstra motorn
+      brakeRightWheel();         //Stannar den högra motorn
     
-      servomotor();       //Kastar bollen
+      servomotor();              //Kastar bollen
 
-      runLeftWheel(255, true);  //Startar den högra motorn
-      runRightWheel(255, true); //Startar den vänstra motorn
+      runLeftWheel(255, true);   //Startar den högra motorn
+      runRightWheel(255, true);  //Startar den vänstra motorn
     
     
-      state = 2;                //Går tillbaka till state RUN
+      state = 2;                 //Går tillbaka till state RUN
     break;
 
     //HALT
     case 0:
     break;
+    
+    //Debug
+    case 5:
+    runRightWheel(255, true);
+    runLeftWheel(255, true);
+    delay(3000);
+
+    digitalWrite(9, HIGH);
+    digitalWrite(8, HIGH);
+    //brakeRightWheel();
+    //brakeLeftWheel();
+  
+
+    //delay(1000);
+    runRightWheel(255, false);
+    runLeftWheel(255, false);
+    
+    break;
+    
   }
 }
