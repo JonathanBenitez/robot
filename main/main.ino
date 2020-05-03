@@ -13,6 +13,7 @@ Info om states
 int trigPin = 11;    // Trigger
 int echoPin = 12;    // Echo
 long duration, cm, inches, averagecm;
+float compassvalue;
 
 Servo servo;  
 // twelve servo objects can be created on most boards
@@ -90,8 +91,8 @@ void brakeRightWheel(){
   }
 
 /**
- * Startar avståndsmätaren och mäter än gång distansen till väggen
- * returner värdet av distansen i cm för en mätning
+ * Starts the distansmeasurements and delays until it receives the signal
+ * return- the value of the measurement
  */
 int avstandmatare(){
   // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
@@ -139,32 +140,40 @@ void servomotor(){
   
   }
 
+  int compass(){
+    
+    return 0//value of compass}
+
 void loop() {
   // put your main code here, to run repeatedly:
   switch(state){
 
     //APP_PRODUCE
     case 1:
-    runLeftWheel(255, true);  //Startar motorn för den vänstra hjulet
-    runRightWheel(255, true); //Startar motorn för den högra hjulet
+    compassvalue = compass(); //Takes a measurement of the compass and saves it in compassvalue
+    runLeftWheel(125, true);  //Starts the left wheel
+    runRightWheel(125, true); //Starts the right wheel
+    delay(3000);              //Delays for 3 seconds
+    brakeLeftWheel();         //Stops the wheel
+    brakeRightWheel();        //Stops the wheel
+    state = 2;                //Goes to Run
     
-    //state = 2;                //Går till run
-    state=5;
+    //state=5;                //Goes to Debug
     break;
 
     //RUN
     case 2:
-      //Tar snittet av 50 mätningar för avståndsmätaren
+      //Takes the average of 50 measurements
       for(int i = 0; i<50; ++i){
        averagecm +=avstandmatare();
        }
        averagecm=averagecm/50;
 
-      //Ifall snittet ligger under 10 cm finns en boll och den går till state THROW
+      //If the average is less than 10 cm it goes to state Throw
       if(averagecm<=10){
         state = 3;
         }
-      //Annars om en vägg är inom 50 cm så svänger motorn i 1 sekund
+      //Else if a wall is in less than 50 cm it turns the wheel for 1 second
       else if(averagecm<=50){
         runLeftWheel(255, false);
         delay(1000);
@@ -175,19 +184,52 @@ void loop() {
 
     //Throw
     case 3:
-  
-      brakeLeftWheel();          //Stannar den vänstra motorn
-      brakeRightWheel();         //Stannar den högra motorn
-    
-      servomotor();              //Kastar bollen
 
-      runLeftWheel(255, true);   //Startar den högra motorn
-      runRightWheel(255, true);  //Startar den vänstra motorn
-    
-    
-      state = 2;                 //Går tillbaka till state RUN
+      
+      brakeLeftWheel();          //Stops the left wheel
+      brakeRightWheel();         //Stops the right wheel
+
+      /Takes the average value of 50 measurements
+      for(int i = 0; i<50; ++i){
+       averagecm +=avstandmatare();
+       }
+       averagecm=averagecm/50;
+       
+      float kompass = kompass();
+      
+      if(averagecm<50){
+        state = 4; 
+      } else{
+         runRightWheel(255, true); //Starts both motors
+         runLeftWheel(255, true);
+
+          delay(200);              //Delay i 200 ms
+        }
+       }
+
+     
     break;
 
+      case 4: 
+      if(compassvalue-kompass<5 & compassvalue-kompass<-5){ //Checks if the degree is acceptable
+         servomotor();              //Throws ball
+      
+          state = 2;
+        }
+        else if(compassvalue-kompass>5){
+           runRightWheel(255, true); //Start Left wheel
+           delay(100);               //delay for 100 ms
+           breakRightWheel();        //brake right wheel
+           delay(100);               //delay for 100 ms
+          } else {
+           runLeftWheel(255, true); //Start right wheel
+           delay(100);              //delay for 100 ms
+           brakeLeftWheel()         //brake Left wheel
+           delay(100);              //Delay for 100 ms
+            }
+        
+
+    break;
     //HALT
     case 0:
     break;
