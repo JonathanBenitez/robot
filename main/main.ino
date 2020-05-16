@@ -12,6 +12,8 @@ Info om states
 
 int trigPin = 11;    // Trigger
 int echoPin = 12;    // Echo
+char way;
+int spin;
 long duration, cm, inches, averagecm;
 float compassvalue;
 
@@ -20,6 +22,9 @@ Servo servo;
 
 int pos = 0;    
 void setup() {
+  //Serial Port begin
+  Serial.begin (9600);
+ 
   // put your setup code here, to run once:
   //Setup Channel A
   pinMode(12, OUTPUT); //Initiates Motor Channel A pin
@@ -33,8 +38,7 @@ void setup() {
 
 //  servo.attach(9);  
 
-    //Serial Port begin
-  Serial.begin (9600);
+
   //Define inputs and outputs
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
@@ -151,11 +155,13 @@ void loop() {
     //APP_PRODUCE
     case 1:
     compassvalue = compass(); //Takes a measurement of the compass and saves it in compassvalue
-    runLeftWheel(125, true);  //Starts the left wheel
-    runRightWheel(125, true); //Starts the right wheel
-    delay(3000);              //Delays for 3 seconds
+    runLeftWheel(255, true);  //Starts the left wheel
+    runRightWheel(255, true); //Starts the right wheel
+    delay(2000);              //Delays for 3 seconds
     brakeLeftWheel();         //Stops the wheel
     brakeRightWheel();        //Stops the wheel
+
+    delay(500);
     state = 2;                //Goes to Run
     
     //state=5;                //Goes to Debug
@@ -163,6 +169,10 @@ void loop() {
 
     //RUN
     case 2:
+      runLeftWheel(255, true);  //Starts the left wheel
+      runRightWheel(255, true); //Starts the right wheel
+      delay(2000);              //Delays for 3 
+      
       //Takes the average of 50 measurements
       for(int i = 0; i<50; ++i){
        averagecm +=avstandmatare();
@@ -175,9 +185,26 @@ void loop() {
         }
       //Else if a wall is in less than 50 cm it turns the wheel for 1 second
       else if(averagecm<=50){
-        runLeftWheel(255, false);
-        delay(1000);
-        runLeftWheel(255, true);
+        spin = random(250,1001);
+        way = random(0,2);
+  
+      if((way & 2) == 0) {
+          runRightWheel(255,true);
+          runLeftWheel(255, false);
+
+          delay(spin);
+          brakeRightWheel();
+          brakeLeftWheel();
+          } else {
+          runLeftWheel(255, true);
+          runRightWheel(255, false)
+          delay(spin);
+          brakeLeftWheel();
+          brakeRightWheel();
+        }
+ 
+     delay(50);
+        
         }
       
     break;
@@ -189,7 +216,7 @@ void loop() {
       brakeLeftWheel();          //Stops the left wheel
       brakeRightWheel();         //Stops the right wheel
 
-      /Takes the average value of 50 measurements
+      //Takes the average value of 50 measurements
       for(int i = 0; i<50; ++i){
        averagecm +=avstandmatare();
        }
