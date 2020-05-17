@@ -18,6 +18,18 @@ long duration, cm, inches, averagecm;
 float compassvalue;
 
 Servo servo;  
+
+#include <LSM303D.h>
+#include <Wire.h>
+#include <SPI.h>
+#define SPI_CS 10
+ 
+/* Global variables */
+int accel[3];  // we'll store the raw acceleration values here
+int mag[3];  // raw magnetometer values stored here
+float realAccel[3];  // calculated acceleration values here
+float heading, titleHeading;
+
 // twelve servo objects can be created on most boards
 
 int pos = 0;    
@@ -42,6 +54,20 @@ void setup() {
   //Define inputs and outputs
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+    char rtn = 0;
+    Serial.println("\r\npower on");
+    rtn = Lsm303d.initI2C();
+    //rtn = Lsm303d.initSPI(SPI_CS);
+    if(rtn != 0)  // Initialize the LSM303, using a SCALE full-scale range
+    {
+        Serial.println("\r\nLSM303D is not found");
+        while(1);
+    }
+    else
+    {
+        Serial.println("\r\nLSM303D is found");
+    }
 
 }
 /**
@@ -145,8 +171,33 @@ void servomotor(){
   }
 
   int compass(){
+
+    while(!Lsm303d.isMagReady());// wait for the magnetometer readings to be ready
+    Lsm303d.getMag(mag);  // get the magnetometer values, store them in mag
+
+    Serial.println("The clockwise angle between the magnetic north and x-axis: ");
+    Serial.print(Lsm303d.getHeading(mag), 3); // this only works if the sensor is level
+    Serial.println(" degrees");
+    return mag;
+    }
+
+  int getAccel(){
     
-    return 0//value of compass}
+      Lsm303d.getAccel(accel);
+       for (int i=0; i<3; i++)
+    {
+        realAccel[i] = accel[i] / pow(2, 15) * ACCELE_SCALE;  // calculate real acceleration values, in units of g
+    }
+       Serial.println("Acceleration of X,Y,Z is");
+    for (int i=0; i<3; i++)
+    {
+        Serial.print(realAccel[i]);
+        Serial.println("g");
+    }
+    //print both the level, and tilt-compensated headings below to compare
+
+    return realAccel;
+    }
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -197,7 +248,7 @@ void loop() {
           brakeLeftWheel();
           } else {
           runLeftWheel(255, true);
-          runRightWheel(255, false)
+          runRightWheel(255, false);
           delay(spin);
           brakeLeftWheel();
           brakeRightWheel();
@@ -222,7 +273,7 @@ void loop() {
        }
        averagecm=averagecm/50;
        
-      float kompass = kompass();
+      float kompass = compass();
       
       if(averagecm<50){
         state = 4; 
@@ -232,7 +283,7 @@ void loop() {
 
           delay(200);              //Delay i 200 ms
         }
-       }
+       
 
      
     break;
@@ -246,12 +297,12 @@ void loop() {
         else if(compassvalue-kompass>5){
            runRightWheel(255, true); //Start Left wheel
            delay(100);               //delay for 100 ms
-           breakRightWheel();        //brake right wheel
+           brakeRightWheel();        //brake right wheel
            delay(100);               //delay for 100 ms
           } else {
            runLeftWheel(255, true); //Start right wheel
            delay(100);              //delay for 100 ms
-           brakeLeftWheel()         //brake Left wheel
+           brakeLeftWheel();         //brake Left wheel
            delay(100);              //Delay for 100 ms
             }
         
@@ -278,6 +329,5 @@ void loop() {
     runLeftWheel(255, false);
     
     break;
-    
+    }
   }
-}
