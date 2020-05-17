@@ -12,3 +12,7 @@ och servomotorn kör sitt
 
 
 # I mappen trail finns alla testprogram
+
+# I sketch finns en betaversion av koden
+
+# För att kunna använda koden måste man ladda ner https://github.com/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2 till library
