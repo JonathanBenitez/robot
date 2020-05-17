@@ -2,20 +2,27 @@
 
 int state = 0;
 /*
-Info om states
-0 HALT sätter stop för roboten
-1 APP_PRODUCE Startar allt innan normal drift
-2 RUN för att köra normalt
-3 THROW när bollen ska kastas
-5 DEBUG för alla enkel kod för att debuga
+Info of states
+0 HALT stops the robot
+1 APP_PRODUCE Start everything correctly
+2 RUN normal drift
+3 THROW part one when it finds the location of the middle of the stage
+4 THROW part two when it throws the ball
+5 DEBUG for debuging parts of the code
 */
 
+/* Global variables */
+int accel[3];  // we'll store the raw acceleration values here
+int mag[3];  // raw magnetometer values stored here
+int pos = 0;    
 int trigPin = 11;    // Trigger
 int echoPin = 12;    // Echo
+float realAccel[3];  // calculated acceleration values here
+
+float heading, titleHeading;
 char way;
-int spin;
+int spin, compassvalue, kompass;
 long duration, cm, inches, averagecm;
-float compassvalue;
 
 Servo servo;  
 
@@ -23,21 +30,14 @@ Servo servo;
 #include <Wire.h>
 #include <SPI.h>
 #define SPI_CS 10
- 
-/* Global variables */
-int accel[3];  // we'll store the raw acceleration values here
-int mag[3];  // raw magnetometer values stored here
-float realAccel[3];  // calculated acceleration values here
-float heading, titleHeading;
 
 // twelve servo objects can be created on most boards
 
-int pos = 0;    
 void setup() {
   //Serial Port begin
   Serial.begin (9600);
  
-  // put your setup code here, to run once:
+  //Put your setup code here, to run once:
   //Setup Channel A
   pinMode(12, OUTPUT); //Initiates Motor Channel A pin
   pinMode(9, OUTPUT);  //Initiates Brake Channel A pin
@@ -47,9 +47,6 @@ void setup() {
   pinMode(8, OUTPUT);  //Initiates Brake Channel B pin
   
   state = 1;
-
-//  servo.attach(9);  
-
 
   //Define inputs and outputs
   pinMode(trigPin, OUTPUT);
@@ -69,7 +66,9 @@ void setup() {
         Serial.println("\r\nLSM303D is found");
     }
 
+    //  servo.attach(9);  
 }
+
 /**
  * Sets forward or backwards momentum for the left Wheel and disengages the brake
  * byte speed is the speed of the motor from 0-255
@@ -155,6 +154,20 @@ int avstandmatare(){
   }
 
 /**
+ * Takes measurements and calculates the average measurements of these
+ * Return the averagedistance of X measurements
+ */
+ int averageDist(){
+      //Takes the average of 50 measurements
+      for(int i = 0; i<50; ++i){
+       averagecm +=avstandmatare();
+       }
+       averagecm=averagecm/50;
+
+  return averagecm;
+  }
+
+/**
  * Startar servomotorn och kör till sitt max sen kör tillbaka
  */
 void servomotor(){
@@ -167,11 +180,13 @@ void servomotor(){
         servo.write(pos);              
         delay(5);                       
     }
-  
   }
-
+  
+/**
+ * Takes the measurements of the magnetic field
+ * Returns the measurement of the magnetic field
+ */
   int compass(){
-
     while(!Lsm303d.isMagReady());// wait for the magnetometer readings to be ready
     Lsm303d.getMag(mag);  // get the magnetometer values, store them in mag
 
@@ -180,6 +195,11 @@ void servomotor(){
     Serial.println(" degrees");
     return mag;
     }
+    
+/**
+ * Measures the accleration from the measurements
+ * Returns the acceleration from the measurements
+ */
 
   int getAccel(){
     
@@ -225,10 +245,7 @@ void loop() {
       delay(2000);              //Delays for 3 
       
       //Takes the average of 50 measurements
-      for(int i = 0; i<50; ++i){
-       averagecm +=avstandmatare();
-       }
-       averagecm=averagecm/50;
+      averagecm = averageDist();
 
       //If the average is less than 10 cm it goes to state Throw
       if(averagecm<=10){
@@ -260,7 +277,7 @@ void loop() {
       
     break;
 
-    //Throw
+    //Throw 1. Go to the middle of stage
     case 3:
 
       
@@ -268,12 +285,9 @@ void loop() {
       brakeRightWheel();         //Stops the right wheel
 
       //Takes the average value of 50 measurements
-      for(int i = 0; i<50; ++i){
-       averagecm +=avstandmatare();
-       }
-       averagecm=averagecm/50;
+      averagecm = averageDist();
        
-      float kompass = compass();
+      kompass = compass();
       
       if(averagecm<50){
         state = 4; 
@@ -288,6 +302,7 @@ void loop() {
      
     break;
 
+      //Throw part two throw
       case 4: 
       if(compassvalue-kompass<5 & compassvalue-kompass<-5){ //Checks if the degree is acceptable
          servomotor();              //Throws ball
@@ -302,14 +317,16 @@ void loop() {
           } else {
            runLeftWheel(255, true); //Start right wheel
            delay(100);              //delay for 100 ms
-           brakeLeftWheel();         //brake Left wheel
+           brakeLeftWheel();        //brake Left wheel
            delay(100);              //Delay for 100 ms
-            }
-        
-
+            }        
     break;
+    
     //HALT
     case 0:
+          brakeLeftWheel();
+          brakeRightWheel();
+          
     break;
     
     //Debug
