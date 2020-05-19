@@ -2,27 +2,20 @@
 
 int state = 0;
 /*
-Info of states
-0 HALT stops the robot
-1 APP_PRODUCE Start everything correctly
-2 RUN normal drift
-3 THROW part one when it finds the location of the middle of the stage
-4 THROW part two when it throws the ball
-5 DEBUG for debuging parts of the code
+Info om states
+0 HALT sätter stop för roboten
+1 APP_PRODUCE Startar allt innan normal drift
+2 RUN för att köra normalt
+3 THROW när bollen ska kastas
+5 DEBUG för alla enkel kod för att debuga
 */
 
-/* Global variables */
-int accel[3];  // we'll store the raw acceleration values here
-int mag[3];  // raw magnetometer values stored here
-int pos = 0;    
 int trigPin = 11;    // Trigger
 int echoPin = 12;    // Echo
-float realAccel[3];  // calculated acceleration values here
-
-float heading, titleHeading;
 char way;
-int spin, compassvalue, kompass;
+int spin;
 long duration, cm, inches, averagecm;
+float compassvalue;
 
 Servo servo;  
 
@@ -30,14 +23,21 @@ Servo servo;
 #include <Wire.h>
 #include <SPI.h>
 #define SPI_CS 10
+ 
+/* Global variables */
+int accel[3];  // we'll store the raw acceleration values here
+int mag[3];  // raw magnetometer values stored here
+float realAccel[3];  // calculated acceleration values here
+float heading, titleHeading;
 
 // twelve servo objects can be created on most boards
 
+int pos = 0;    
 void setup() {
   //Serial Port begin
   Serial.begin (9600);
  
-  //Put your setup code here, to run once:
+  // put your setup code here, to run once:
   //Setup Channel A
   pinMode(12, OUTPUT); //Initiates Motor Channel A pin
   pinMode(9, OUTPUT);  //Initiates Brake Channel A pin
@@ -46,7 +46,10 @@ void setup() {
   pinMode(13, OUTPUT); //Initiates Motor Channel B pin
   pinMode(8, OUTPUT);  //Initiates Brake Channel B pin
   
-  state = 1;
+  state = 5;
+
+//  servo.attach(9);  
+
 
   //Define inputs and outputs
   pinMode(trigPin, OUTPUT);
@@ -66,9 +69,7 @@ void setup() {
         Serial.println("\r\nLSM303D is found");
     }
 
-    //  servo.attach(9);  
 }
-
 /**
  * Sets forward or backwards momentum for the left Wheel and disengages the brake
  * byte speed is the speed of the motor from 0-255
@@ -154,20 +155,6 @@ int avstandmatare(){
   }
 
 /**
- * Takes measurements and calculates the average measurements of these
- * Return the averagedistance of X measurements
- */
- int averageDist(){
-      //Takes the average of 50 measurements
-      for(int i = 0; i<50; ++i){
-       averagecm +=avstandmatare();
-       }
-       averagecm=averagecm/50;
-
-  return averagecm;
-  }
-
-/**
  * Startar servomotorn och kör till sitt max sen kör tillbaka
  */
 void servomotor(){
@@ -180,13 +167,11 @@ void servomotor(){
         servo.write(pos);              
         delay(5);                       
     }
-  }
   
-/**
- * Takes the measurements of the magnetic field
- * Returns the measurement of the magnetic field
- */
+  }
+
   int compass(){
+
     while(!Lsm303d.isMagReady());// wait for the magnetometer readings to be ready
     Lsm303d.getMag(mag);  // get the magnetometer values, store them in mag
 
@@ -195,11 +180,6 @@ void servomotor(){
     Serial.println(" degrees");
     return mag;
     }
-    
-/**
- * Measures the accleration from the measurements
- * Returns the acceleration from the measurements
- */
 
   int getAccel(){
     
@@ -218,6 +198,24 @@ void servomotor(){
 
     return realAccel;
     }
+
+    float averagedist(){
+      int average;
+      float averagec;
+
+      for(int i = 0; i<50; i++){
+        average = avstandsmatare();
+        if(average<4500){
+          averagec=average;
+          }
+        else{
+          i--;
+          }
+        }
+        averagec= averagec/50;
+        
+      return averagec;
+      }
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -245,7 +243,10 @@ void loop() {
       delay(2000);              //Delays for 3 
       
       //Takes the average of 50 measurements
-      averagecm = averageDist();
+      for(int i = 0; i<50; ++i){
+       averagecm +=avstandmatare();
+       }
+       averagecm=averagecm/50;
 
       //If the average is less than 10 cm it goes to state Throw
       if(averagecm<=10){
@@ -277,7 +278,7 @@ void loop() {
       
     break;
 
-    //Throw 1. Go to the middle of stage
+    //Throw
     case 3:
 
       
@@ -285,9 +286,12 @@ void loop() {
       brakeRightWheel();         //Stops the right wheel
 
       //Takes the average value of 50 measurements
-      averagecm = averageDist();
+      for(int i = 0; i<50; ++i){
+       averagecm +=avstandmatare();
+       }
+       averagecm=averagecm/50;
        
-      kompass = compass();
+      float kompass = compass();
       
       if(averagecm<50){
         state = 4; 
@@ -302,7 +306,6 @@ void loop() {
      
     break;
 
-      //Throw part two throw
       case 4: 
       if(compassvalue-kompass<5 & compassvalue-kompass<-5){ //Checks if the degree is acceptable
          servomotor();              //Throws ball
@@ -317,16 +320,14 @@ void loop() {
           } else {
            runLeftWheel(255, true); //Start right wheel
            delay(100);              //delay for 100 ms
-           brakeLeftWheel();        //brake Left wheel
+           brakeLeftWheel();         //brake Left wheel
            delay(100);              //Delay for 100 ms
-            }        
+            }
+        
+
     break;
-    
     //HALT
     case 0:
-          brakeLeftWheel();
-          brakeRightWheel();
-          
     break;
     
     //Debug
@@ -334,17 +335,92 @@ void loop() {
     runRightWheel(255, true);
     runLeftWheel(255, true);
     delay(3000);
-
-    digitalWrite(9, HIGH);
-    digitalWrite(8, HIGH);
-    //brakeRightWheel();
-    //brakeLeftWheel();
-  
-
-    //delay(1000);
     runRightWheel(255, false);
     runLeftWheel(255, false);
-    
+    delay(3000);
+
+    brakeRightWheel();
+    brakeLeftWheel();
+    delay(1000);
+
+    Serial.println(avstandsmatare());
+    Serial.println(averagedist());
+    Serial.println(compass());
+    state = 6;
+    break;
+    //Debug 2
+    case 6:
+     digitalWrite(12, HIGH); //Establishes forward direction of Channel A
+     digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+     analogWrite(3, 255);   //Spins the motor on Channel A at full speed
+  
+     digitalWrite(13, HIGH); //Establishes forward direction of Channel B
+     digitalWrite(8, LOW);   //Disengage the Brake for Channel B
+     analogWrite(11, 255);   //Spins the motor on Channel B at full speed
+
+     delay(3000);
+  
+     digitalWrite(9, HIGH); //Eengage the Brake for Channel A
+     digitalWrite(8, HIGH); //Eengage the Brake for Channel B
+
+
+     delay(1000);
+  
+  //backward @ half speed
+    digitalWrite(12, LOW); //Establishes backward direction of Channel A
+    digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+    analogWrite(3, 123);   //Spins the motor on Channel A at half speed
+  
+    digitalWrite(13, LOW); //Establishes backward direction of Channel B
+    digitalWrite(8, LOW);   //Disengage the Brake for Channel B
+    analogWrite(11, 123);   //Spins the motor on Channel B at half speed
+  
+    delay(3000);
+  
+    digitalWrite(9, HIGH); //Eengage the Brake for Channel A
+    digitalWrite(8, HIGH); //Eengage the Brake for Channel B
+  
+    delay(1000);
+
+    // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+      digitalWrite(trigPin, LOW);
+      delayMicroseconds(5);
+      digitalWrite(trigPin, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trigPin, LOW);
+ 
+      // Read the signal from the sensor: a HIGH pulse whose
+      // duration is the time (in microseconds) from the sending
+      // of the ping to the reception of its echo off of an object.
+      pinMode(echoPin, INPUT);
+      duration = pulseIn(echoPin, HIGH);
+ 
+      // Convert the time into a distance
+      cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
+      inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
+  
+      Serial.print(inches);
+      Serial.print("in, ");
+      Serial.print(cm);
+      Serial.print("cm");
+      Serial.println();
+
+      delay(250);
+
+      analogWrite(5, 123);
+      delay(3000);
+
+      Serial.print("startar servomotorn");
+      for (pos = 0; pos <= 180; pos += 1) { 
+       // in steps of 1 degree
+        servo.write(pos);              
+        delay(5);                       
+      }
+      
+      for (pos = 180; pos >= 0; pos -= 1) { 
+        servo.write(pos);              
+        delay(5);                       
+      }
     break;
     }
   }
