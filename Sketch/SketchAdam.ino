@@ -18,7 +18,7 @@
     8:
     9: Testcase
     10:Testcase
- l
+  l
 */
 
 Servo servo;
@@ -46,16 +46,21 @@ int distFront;
 int distBall;
 int distRight;
 int distLeft;
+int distRatio
+int dist = [distFront, distBall, distRight, distLeft, distRatio];
+
 
 int trigFront = 39;
 int trigBall;
 int trigRight = A9;
-int trigLeft;
+int trigLeft = 18;
+int trig = [trigFront, trigBall, trigRight, trigLeft];
 
 int echoFront = 37;
 int echoBall;
 int echoRight = A10;;
-int echoLeft;
+int echoLeft = 17;
+int echo = [echoFront, echoBall, echoRight, echoLeft];
 
 
 
@@ -101,6 +106,13 @@ void setup() {
   digitalWrite(A11, LOW);
 
   /* Left */
+  pinMode(trigLeft, OUTPUT);
+  pinMode(echoLeft, INPUT);
+  pinMode(19, OUTPUT);
+  pinMode(16, OUTPUT);
+  digitalWrite(19, HIGH);
+  digitalWrite(16, LOW);
+
 
 
   /* Beginning state */
@@ -113,9 +125,9 @@ void loop() {
   switch (state) {
 
     case 10:
-    Serial.println(getPosition());
-    delay(1000);
-    break;
+      Serial.println(getPosition());
+      delay(1000);
+      break;
 
     /* Testcase 9: Samma som bnf med med metoderna */
     case 9:
@@ -147,7 +159,7 @@ void loop() {
       analogWrite(3, 50);   //Spins the motor on Channel A at full speed
 
       digitalWrite(13, HIGH); //Establishes forward direction of Channel B
-      digitalWrite(8, LOW);   //Disengage the Brake for Channel 
+      digitalWrite(8, LOW);   //Disengage the Brake for Channel
       analogWrite(11, 50);   //Spins the motor on Channel B at full speed
 
       delay(3000);
@@ -227,15 +239,17 @@ void loop() {
           //brakeLeftWheel();
         }
 
-        // Run forward until hit wall - then back up for 1s and repeat
-        getDistance(trigFront, echoFront);
-        while (distance > 10) {
-          getDistance(trigFront, echoFront);
-          //Serial.println(distance);
+        // Run forward until hit wall - then back up for 1s and repeat. Måste fixa så den märker när den har en boll -> kasta sen. 
+        getDistance();
+        while (distFront > 10) { //&& distBall > 10 && distRight > 10 && distLeft > 10)
+          getDistance();
+          if(distRatio > 1.5) {
+            state = 3;
+          }
           runRightWheel(50, true);
           runLeftWheel(50, true);
         }
-        
+
         Serial.println("Stop");
         brakeRightWheel();
         brakeLeftWheel();
@@ -364,24 +378,28 @@ void brakeRightWheel() {
 
 
 
-/**
-   Startar avståndsmätarna och räknar ut avstånden. Funderar på om man ska göra så den räknar ut alla avstånden. Smidigt om den går konstant men drar kanske en del ström
-*/
-void getDistance(int trig, int echo) {
+/** Startar avståndsmätarna och räknar ut avstånden. Fungerar for-loopen? Ok att pinsen är på alltid? Skriva någon slags kontrollkod */
+void getDistance() {
 
-  digitalWrite(trig, LOW); // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-  delayMicroseconds(5);
-  digitalWrite(trig, HIGH); // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
-  delayMicroseconds(10);
-  digitalWrite(trig, LOW);
-  pinMode(echo, INPUT); // Read the signal from the sensor: a HIGH pulse whose duration is the time (in microseconds) from the sending of the ping to the reception of its echo.
-  duration = pulseIn(echo, HIGH);
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(trig[i], LOW); // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+    delayMicroseconds(5);
+    digitalWrite(trig[i], HIGH); // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+    delayMicroseconds(10);
+    digitalWrite(trig[i], LOW);
+    pinMode(echo[i], INPUT); // Read the signal from the sensor: a HIGH pulse whose duration is the time (in microseconds) from the sending of the ping to the reception of its echo.
+    duration = pulseIn(echo[i], HIGH);
 
-  // Convert the time into a distance
-  distance = (duration / 2) / 29.1;   // Divide by 29.1 or multiply by 0.0343
-  delay(50);
-
-  return distance;
+    // Convert the time into a distance
+    dist[i] = (duration / 2) / 29.1;   // Divide by 29.1 or multiply by 0.0343
+    delay(50);
+  }
+  distFront = dist[0];
+  distBall = dist[1];
+  distRight = dist[2];
+  distLeft = dist[3];
+  distRatio = dist[0]/dist[1];
+  dist[4] = distRatio;
 }
 
 
@@ -401,6 +419,8 @@ void turnToCenter(int degrees) {
   Serial.println("End");
   state = 0; // Kasta bollen
 }
+
+/**-----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void OGCompass() {
   // Setup kompass
