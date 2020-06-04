@@ -16,7 +16,6 @@
     6:
     7:
     8:
-    9: Testcase
     10:Testcase
   l
 */
@@ -33,7 +32,7 @@ boolean forward = true;
 boolean backward = false;
 
 int pos = 0;
-int center;
+int center = 0;
 
 
 int averagecm = 0;
@@ -42,25 +41,25 @@ int averagecm = 0;
 /* Setup Distance meters - nu måste vi deklarera nya matningara för alla fyra, kanske lättare om vi sätter alla till samma */
 long duration, distance, inches;
 
-int distFront;
-int distBall;
-int distRight;
-int distLeft;
-int distRatio
-int dist = [distFront, distBall, distRight, distLeft, distRatio];
+int distFront = 0;
+int distBall = 0;
+int distRight = 0;
+int distLeft = 0;
+int distRatio = 0;
+int distvector[5]  = {distFront, distBall, distRight, distLeft, distRatio};
 
 
-int trigFront = 39;
+int trigFront = 41;
 int trigBall;
-int trigRight = A9;
-int trigLeft = 18;
-int trig = [trigFront, trigBall, trigRight, trigLeft];
+int trigRight = A13;
+int trigLeft = 20;
+int trig[4] = {trigFront, trigBall, trigRight, trigLeft};
 
-int echoFront = 37;
+int echoFront = 39;
 int echoBall;
-int echoRight = A10;;
-int echoLeft = 17;
-int echo = [echoFront, echoBall, echoRight, echoLeft];
+int echoRight = A14;;
+int echoLeft = 19;
+int echo[4] = {echoFront, echoBall, echoRight, echoLeft};
 
 
 
@@ -76,42 +75,41 @@ void setup() {
   Serial.begin(9600);
   servo.attach(5);
 
-  //Setup Channel A and B
+  /* Setup Channel A and B */
   pinMode(12, OUTPUT); //Initiates Motor Channel A pin
   pinMode(9, OUTPUT);  //Initiates Brake Channel A pin
   pinMode(13, OUTPUT); //Initiates Motor Channel B pin
   pinMode(8, OUTPUT);  //Initiates Brake Channel B pin
 
-  //Setup Servo
+  /* Setup Servo */
   pinMode(4, OUTPUT); // Initiates Servo
-
-
+  digitalWrite(4, HIGH);
 
   /* Front */
   pinMode(trigFront, OUTPUT);
   pinMode(echoFront, INPUT);
-  pinMode(41, OUTPUT);
-  pinMode(35, OUTPUT);
-  digitalWrite(41, HIGH);
-  digitalWrite(35, LOW);
+  pinMode(43, OUTPUT);
+  pinMode(37, OUTPUT);
+  digitalWrite(43, HIGH);
+  digitalWrite(37, LOW);
 
   /* Ball */
 
   /* Right */
   pinMode(trigRight, OUTPUT);
   pinMode(echoRight, INPUT);
-  pinMode(A8, OUTPUT);
-  pinMode(A11, OUTPUT);
-  digitalWrite(A8, HIGH);
-  digitalWrite(A11, LOW);
+  pinMode(A12, OUTPUT);
+  pinMode(A15, OUTPUT);
+  digitalWrite(A12, HIGH);
+  digitalWrite(A15, LOW);
 
   /* Left */
   pinMode(trigLeft, OUTPUT);
   pinMode(echoLeft, INPUT);
-  pinMode(19, OUTPUT);
-  pinMode(16, OUTPUT);
-  digitalWrite(19, HIGH);
-  digitalWrite(16, LOW);
+  pinMode(21, OUTPUT);
+  pinMode(18, OUTPUT);
+  digitalWrite(21, HIGH);
+  digitalWrite(18, LOW);
 
 
 
@@ -124,92 +122,79 @@ void loop() {
 
   switch (state) {
 
+    /* Testcase för de två metoderna */
+    case 12:
+      runWheels(100, true);
+      delay(2000);
+      breakWheels();
+      delay(2000);
+      runWheels(100, false);
+      delay(2000);
+      breakWheels();
+      break;
+
+    /* Testcase 11: Testa metoderna runWheels/brakeWheels och turnDegrees()*/
+    case 11:
+      turnDegrees(360);
+      break;
+
+    /* Testcase 10: Testa metoderna för avståndsmätning samt detektering av boll */
     case 10:
-      Serial.println(getPosition());
+      Serial.print("Distance front: ");
+      Serial.println(getDistance(trigFront, echoFront));
+      Serial.print("Distance ball: ");
+      Serial.println(getDistance(trigBall, echoBall));
+      Serial.print("Ratio: ");
+      Serial.println(getDistance(trigFront, echoFront));
+      Serial.print("Distance left: ");
+      Serial.println(getDistance(trigLeft, echoLeft));
+      Serial.print("Distance Right: ");
+      Serial.println(getDistance(trigRight, echoRight));
+      Serial.println("------------------------------------------------------");
       delay(1000);
       break;
 
-    /* Testcase 9: Samma som bnf med med metoderna */
+    /* Testcase 9: Samma som bnf med med metoderna. Fungerar bra! Bugga innan bara? */
     case 9:
       Serial.println("Fram 3s");
-      runRightWheel(50, true);
-      //runLeftWheel(50, true);
+      runRightWheel(100, true);
+      runLeftWheel(100, true);
       delay(3000);
       Serial.println("Paus efter fram 3s");
       brakeRightWheel();
-      //brakeLeftWheel();
+      brakeLeftWheel();
       delay(3000);
       Serial.println("Bak 3s");
-      runRightWheel(50, false);
-      //runLeftWheel(50, false);
+      runRightWheel(100, false);
+      runLeftWheel(100, false);
       delay(3000);
       Serial.println("Paus efter bak 3s");
       brakeRightWheel();
-      //brakeLeftWheel();
+      brakeLeftWheel();
       delay(3000);
       //state = 5;
       break;
 
-    /* Testcase 5: Back & forth */
-    case 5:
-
-      Serial.println("Fram 3s");
-      digitalWrite(12, HIGH); //Establishes forward direction of Channel A
-      digitalWrite(9, LOW);   //Disengage the Brake for Channel A
-      analogWrite(3, 50);   //Spins the motor on Channel A at full speed
-
-      digitalWrite(13, HIGH); //Establishes forward direction of Channel B
-      digitalWrite(8, LOW);   //Disengage the Brake for Channel
-      analogWrite(11, 50);   //Spins the motor on Channel B at full speed
-
-      delay(3000);
-
-      Serial.println("Paus efter fram 3s");
-      digitalWrite(9, HIGH); //Eengage the Brake for Channel A
-      digitalWrite(8, HIGH); //Eengage the Brake for Channel B
-      analogWrite(3, 0);
-      analogWrite(11, 0);
-
-      delay(3000);
-
-      Serial.println("Bak 3s");
-      //digitalWrite(12, LOW); //Establishes forward direction of Channel A
-      //digitalWrite(9, LOW);   //Disengage the Brake for Channel A
-      analogWrite(3, 50);   //Spins the motor on Channel A at full speed
-
-      //digitalWrite(13, LOW); //Establishes forward direction of Channel A
-      //digitalWrite(8, LOW);   //Disengage the Brake for Channel A
-      //analogWrite(11, 50);   //Spins the motor on Channel A at full speed
-
-      delay(3000);
-
-      Serial.println("Paus efter bak 3s");
-      digitalWrite(9, HIGH); //Eengage the Brake for Channel A
-      digitalWrite(8, HIGH); //Eengage the Brake for Channel B
-
-      delay(3000);
-      //state = 9;
-      break;
-
+    
     /* Case 0: Halt*/
     case 0:
+      Serial.println("Stop");
       break;
 
     /* Case 1: Initiate */
     case 1:
       Serial.println("Case 1: Initiate");
 
-      runRightWheel(25, true);
-      runLeftWheel(25, true);
+      runRightWheel(100, true);
+      runLeftWheel(100, true);
       delay(3000);
       brakeRightWheel();
       brakeLeftWheel();
       delay(2000);
 
-      center = getPosition();
       Serial.print("Center is this many degrees of north: ");
       Serial.println(center);
-      delay(1000);
+      delay(2000);
 
       state = 2;
       break;
@@ -225,29 +210,34 @@ void loop() {
 
         // Spin
         spin = random(500, 2000);
-        way = random(0, 3); // Number betwenn 1 and 2 - decides which way to spin
+        way = random(2); // Number betwenn 0 and 1 - decides which way to spin
+        Serial.print(way);
         Serial.print("Spin: ");
         if ((way & 2) == 0) {
           Serial.println("Left");
-          runRightWheel(50, true);
+          runRightWheel(100, true);
           delay(2 * spin);
           //brakeRightWheel();
         } else {
           Serial.println("Right");
-          runLeftWheel(50, true);
-          delay(2 * spin);
+          runLeftWheel(100, true);
+          delay(spin);
           //brakeLeftWheel();
         }
 
-        // Run forward until hit wall - then back up for 1s and repeat. Måste fixa så den märker när den har en boll -> kasta sen. 
+        // Run forward until hit wall - then back up for 1s and repeat. Måste fixa så den märker när den har en boll -> kasta sen.
         getDistance();
-        while (distFront > 10) { //&& distBall > 10 && distRight > 10 && distLeft > 10)
-          getDistance();
-          if(distRatio > 1.5) {
-            state = 3;
-          }
-          runRightWheel(50, true);
-          runLeftWheel(50, true);
+        //getDistance(trigBall, echoBall);
+        while (getDistance(trigFront, echoFront) > 10) {
+          getDistance(trigFront, echoFront);
+          //Serial.print("Distance to the front is: ");
+          //Serial.println(distFront);
+          //getDistance(trigBall, echoBall);
+          //if (distFront < 10) {
+          //state = 3;
+          //}
+          runRightWheel(100, true);
+          runLeftWheel(100, true);
         }
 
         Serial.println("Stop");
@@ -255,15 +245,42 @@ void loop() {
         brakeLeftWheel();
         delay(2000);
         Serial.print("Backa");
-        runRightWheel(50, false);
-        runLeftWheel(50, false);
+        runRightWheel(100, false);
+        runLeftWheel(100, false);
         delay(1000);
         brakeRightWheel();
         brakeLeftWheel();
-        delay(3000);
-        Serial.print("");
+        delay(1000);
+
+        // Om vi är nära väggarna
+        if (getDistance(trigLeft, echoLeft) < 10 || getDistance(trigRight, echoRight) < 10) {
+          if (getDistance(trigLeft, echoLeft) < 10) {
+            Serial.print("Distance to the left is: ");
+            Serial.println(getDistance(trigLeft, echoLeft));
+            runRightWheel(100, false);
+            runLeftWheel(100, true);
+            delay(625);
+            brakeRightWheel();
+            brakeLeftWheel();
+          } else if (getDistance(trigRight, echoRight) < 10) {
+            Serial.print("Distance to the right is: ");
+            Serial.println(getDistance(trigRight, echoRight));
+            runRightWheel(100, true);
+            runLeftWheel(100, false);
+            delay(625);
+            brakeRightWheel();
+            brakeLeftWheel();
+          }
+          runLeftWheel(100, true);
+          runRightWheel(100, true);
+          delay(2000);
+          brakeLeftWheel();
+          brakeRightWheel();
+        }
+
         Serial.println("Börjar vi om igen");
         delay(2000);
+
 
       }
 
@@ -278,8 +295,7 @@ void loop() {
     */
     case 3:
       Serial.println("Case 3: Pick-up & Time To Yeet");
-      servo.attach(6);
-      //digitalWrite(4, HIGH);
+      digitalWrite(4, HIGH);
 
       // servo.write(360); // Stop
 
@@ -293,23 +309,26 @@ void loop() {
 
 
       // Koden här fungerar ifall man matar direkt från 5V
-      Serial.println("Hello");
+      Serial.println("Pick-up");
       servo.write(96);
-      delay(750);
+      delay(1000);
       servo.write(95);
       delay(1000);
+      state = 4; // Positionerar sig
 
+      Serial.println("Yeet");
       servo.write(120);
       delay(300);
-
       servo.write(95);
       delay(2000);
 
+      Serial.println("Let down");
       servo.write(93);
       delay(1760);
       servo.write(95);
       delay(500);
 
+      state = 2; // Gå tillbaka till Spin & Search
       break;
 
     /* Case 4: Position */
@@ -323,6 +342,9 @@ void loop() {
 
   }
 }
+
+                                                             /* Slut på cases, metoder under */
+/*--------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 
 /**
@@ -355,7 +377,7 @@ void brakeLeftWheel() {
    Sätter hastighet och rikting för högerhjulet. För tillfället fungerar inte bakriktingen vilket den har gjort tidigare. Kanske ska testa med en annan DC-motor?
 */
 void runRightWheel(byte speed, boolean direction) {
-  //  Serial.print("runRightWheel(): ");
+  //Serial.print("runRightWheel(): ");
   if (direction == true) {
     //Serial.println("Forward");
     digitalWrite(12, HIGH); //Establishes forward directios of Channel B
@@ -371,14 +393,14 @@ void runRightWheel(byte speed, boolean direction) {
    Bromsar högerhjulet och sätter hastigheten till 0
 */
 void brakeRightWheel() {
-  //  Serial.println("breakRightWheel()");
+  //Serial.println("breakRightWheel()");
   digitalWrite(9, HIGH);
   analogWrite(3, 0);
 }
 
 
 
-/** Startar avståndsmätarna och räknar ut avstånden. Fungerar for-loopen? Ok att pinsen är på alltid? Skriva någon slags kontrollkod */
+/** Startar avståndsmätarna och räknar ut avstånden. Tar ungefär 2.5s, sjukt ineffektivt */
 void getDistance() {
 
   for (int i = 0; i < 4; i++) {
@@ -391,15 +413,43 @@ void getDistance() {
     duration = pulseIn(echo[i], HIGH);
 
     // Convert the time into a distance
-    dist[i] = (duration / 2) / 29.1;   // Divide by 29.1 or multiply by 0.0343
+    distvector[i] = (duration / 2) / 29.1;   // Divide by 29.1 or multiply by 0.0343
     delay(50);
   }
-  distFront = dist[0];
-  distBall = dist[1];
-  distRight = dist[2];
-  distLeft = dist[3];
-  distRatio = dist[0]/dist[1];
-  dist[4] = distRatio;
+
+  distFront = distvector[0];
+  distBall = distvector[1];
+  distRight = distvector[2];
+  distLeft = distvector[3];
+  distRatio = (distvector[0] - distvector[1]) / distvector[1];
+  distvector[4] = distRatio;
+
+}
+
+/** Räknar ut avståndet för en specifik avståndsmätare. Snabbare att göra 4st anrop?*/
+int getDistance(int trig, int echo) {
+  int dist = 0;
+
+  digitalWrite(trig, LOW); // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+  delayMicroseconds(5);
+  digitalWrite(trig, HIGH); // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  pinMode(echo, INPUT); // Read the signal from the sensor: a HIGH pulse whose duration is the time (in microseconds) from the sending of the ping to the reception of its echo.
+  duration = pulseIn(echo, HIGH);
+
+  // Convert the time into a distance
+  dist = (duration / 2) / 29.1;   // Divide by 29.1 or multiply by 0.0343
+  if (trig == trigFront) {
+    return distFront = dist;
+  } else if (trig == trigBall) {
+    return distBall = dist;
+  } else if (trig == trigLeft) {
+    return distLeft = dist;
+  } else if (trig == trigRight) {
+    return distRight = dist;
+  }
+  delay(50);
 }
 
 
@@ -417,10 +467,85 @@ void turnToCenter(int degrees) {
   brakeRightWheel();
   brakeLeftWheel();
   Serial.println("End");
-  state = 0; // Kasta bollen
 }
 
+/* Får asskeva värden?? Vill inte bromsa */
+void turnDegrees(int degrees) {
+  int time;
+  int constant = 2500; // Tar ca 2.5s att snurra ett helt varv
+  time = (degrees * constant) / 360; // 7 Blir skevt värde ??
+  Serial.println(constant);
+  Serial.println(time);
+
+  if (degrees > 0) {
+    runRightWheel(100, true);
+    runLeftWheel(100, true);
+  } else {
+    runRightWheel(100, false);
+    runLeftWheel(100, true);
+  }
+  delay(time);
+  brakeRightWheel();
+  brakeLeftWheel();
+}
+
+
+/* Istället för att kalla på båda alltid */
+void runWheels(byte speed, boolean direction) {
+  runRightWheel(100, true);
+  runLeftWheel(100, true);
+}
+
+/* Istället för att kalla på båda alltid */
+void breakWheels() {
+  brakeRightWheel();
+  brakeLeftWheel();
+}
+
+
 /**-----------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+/* Testcase 5: Back & forth. Fungerar bra! */
+    case 5:
+
+      Serial.println("Fram 3s");
+      digitalWrite(12, HIGH); //Establishes forward direction of Channel A
+      digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+      analogWrite(3, 100);   //Spins the motor on Channel A at full speed
+
+      digitalWrite(13, HIGH); //Establishes forward direction of Channel B
+      digitalWrite(8, LOW);   //Disengage the Brake for Channel
+      analogWrite(11, 100);   //Spins the motor on Channel B at full speed
+
+      delay(3000);
+
+      Serial.println("Paus efter fram 3s");
+      digitalWrite(9, HIGH); //Eengage the Brake for Channel A
+      digitalWrite(8, HIGH); //Eengage the Brake for Channel B
+      analogWrite(3, 0);
+      analogWrite(11, 0);
+
+      delay(3000);
+
+      Serial.println("Bak 3s");
+      digitalWrite(12, LOW); //Establishes forward direction of Channel A
+      digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+      analogWrite(3, 100);   //Spins the motor on Channel A at full speed
+
+      digitalWrite(13, LOW); //Establishes forward direction of Channel A
+      digitalWrite(8, LOW);   //Disengage the Brake for Channel A
+      analogWrite(11, 100);   //Spins the motor on Channel A at full speed
+
+      delay(3000);
+
+      Serial.println("Paus efter bak 3s");
+      digitalWrite(9, HIGH); //Eengage the Brake for Channel A
+      digitalWrite(8, HIGH); //Eengage the Brake for Channel B
+
+      delay(3000);
+      break;
+
+
 
 void OGCompass() {
   // Setup kompass
